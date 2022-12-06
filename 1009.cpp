@@ -3,6 +3,11 @@
 #include<vector>
 using namespace std;
 
+
+/*
+   PAT1009 已经AC
+*/
+
 // 用来记录每个式子的非0项下标(指数)
 vector<int> noZero[2];
 
