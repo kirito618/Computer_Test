@@ -79,8 +79,7 @@ int main(){
 			}
 			cout<<ranks[tempIndex][min]<<" "<<result[min]<<endl;
 		}
-	}
-	
+	}	
 	return 0;
 }
  
