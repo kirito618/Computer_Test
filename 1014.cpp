@@ -1,101 +1,116 @@
 #include<iostream>
-#include<vector>
+#include<queue>
+#include<bits/stdc++.h>
 using namespace std;
+// 第一次提交 只有16分! 
+// 第二次提交 发现之前对题目有误解 是说5点之前还没轮到的 就不服务了 输出sorry
+// 而不是说服务完的时间在5点之后的输出sorry  改了以后得到27分 仅差一个测试点 
 
-int N,M,K,Q;// N是窗口数，M是每个窗口队列的最大长度，K是顾客数，Q是想要计算完成时间的顾客数
-int time[1001];// 代表的是 i号顾客所需服务时间
-int HH[1001],MM[1001];
-int HH_list[20],MM_list[20];
-vector<int> searchList; // 存放要计算时间的所有顾客 
-vector<int> frontList[20];// 存放各个窗口的队列(黄线内)
-vector<int> waitList;// 存放黄线外的等待队列 
 
-// 递归计算每个顾客的时间。
-void dfs(int listIndex,int cur){
-	if(frontList[listIndex][0]==cur){
-		//当前是某队列的第一个顾客
-		
-	}
-	
-	
+struct customer{
+	int index; 
+	int startTime;
+	int finishTime;
+	int needTime;
+};
+int N,M,K,Q;
+int queueIndexList[20];
+queue<customer> allWindow[20];
+// 从1开始编号 
+customer cus[1001];
+// 表示窗口是否正在服务（服务的话存的是被服务者的编号） 
+int window[20];
+int queryList[1000];
+
+bool comp(int i1,int i2){
+	int len1 =  allWindow[i1].size();
+	int len2 =  allWindow[i2].size();
+	if(len1==len2) return i1<i2;
+	else return len1<len2;
 }
 
-void formatResult(int HH,int MM){ 
-	if(HH<17){
-		if(HH<10){
-			cout<<"0";
-		}
-		cout<<HH<<":";
-		if(MM<10){
-			cout<<"0";
-		}
-		cout<<MM<<endl;
-	}else{
-		cout<<"Sorry";
-	}
-}
+
 
 int main(){
-	int temp,HH,MM;
-	int neglect; // 表示现在还没被服务的顾客的编号 
-	bool flag = true;
+	// 我都以分钟为单位长度 
+	int beginTime = 8*60,endTime = 17*60;
 	cin>>N>>M>>K>>Q;
-	// 输入各个顾客所需的服务时间 
+	// 初始化 
+	for(int i=0;i<N;i++){
+		window[i] = -1;
+		queueIndexList[i] = i;
+	}
 	for(int i=1;i<=K;i++){
-		cin>>time[i];
+		cin>>cus[i].needTime;
+		cus[i].finishTime = -1;
+		cus[i].startTime = -1;
+		cus[i].index = i;
 	}
-	// 设置起始时间 
-	for(int i=0;i<N;i++) {
-		HH_list[i] = 8;
-		MM_list[i] = 0;
-	}
-	// 接下来输入需要计算时间的顾客并保存起来 
-	for(int i=0;i<Q;i++){
-		cin>>temp;
-		searchList.push_back(temp);
-	}
+	//输入查询列表 
+	for(int i=0;i<Q;i++) cin>>queryList[i];
 	
-	for(int i=1;i-1<N&&i<=K;i++){
-		frontList[i-1].push_back(i);
-		neglect = i+1;
-	}
-	
-	while(neglect<=K){
-		//推进一轮，把每个队的第一个都处理完，更新每个队列的起始时间 
+	int time=beginTime;
+	// 代表下一个入队的人编号 
+	int nextIndex = 1;
+	int temp;
+	for(time = beginTime;time<endTime;time++){
+		//送客
 		for(int i=0;i<N;i++){
-			if(frontList[i].length()==0) continue;
-			temp = frontList[i][0];
-			// 将这个元素从队列中删掉 
-			frontList[i].erase(frontList[i].begin());
-			HH_list[i] += time[temp]/60;
-			MM_list[i] += time[temp]%60;
-			if(MM_list[i]>=60){
-				MM_list[i] = MM_list[i]%60;
-				HH_list[i]++;
-			}
-			// 更新被处理者的完成时间
-			HH[temp] = HH_list[i];
-			MM[temp] = MM_list[i];
-		}
-		
-		
-		// 找到目前最短的那个队
-	    for(int i=0,min = 0;i<N;i++){
-	    	if(frontList[i].length()<frontList[min].length()){
-	    		min = i;
+			if(window[i]!=-1){
+				temp = window[i];
+				if(cus[temp].finishTime==time){
+					//该走了
+					allWindow[i].pop();
+					// 窗口空闲 
+					window[i] = -1;
+				}
 			}
 		}
-		if(frontList[min].length()==M){
-			// 说明最短的那一队都没地方了 
-			break;
+		
+		// 入队
+		// 先按排(i) 再按列(j)来看 
+		for(int i=1;i<=M;i++){
+			for(int j=0;j<N;j++){
+				// 拿到当前队列的长度 
+				temp = allWindow[j].size();
+				// 如果当前看的排数中 当前队伍长度是小于当前排数的
+				// 那说明在每队人数=排数时,这一列是序号最小且最短的队伍 
+				// 那么黄线外的第一个人就应该进来排队了 
+				if(temp<i&&nextIndex<=K){
+					allWindow[j].push(cus[nextIndex]);
+					nextIndex++;
+				}
+			}
+		} 
+		
+		// 设置时间2 
+		for(int i=0;i<N;i++){
+			// 拿到队列编号 
+			if(window[i]==-1){
+				//取出编号 占用窗口 
+				window[i] = allWindow[i].front().index;
+			}
+			if(cus[window[i]].startTime==-1){
+				cus[window[i]].startTime = time;
+				cus[window[i]].finishTime = time + cus[window[i]].needTime;
+			}
 		}
-		
-		
-		HH[neglect] 
-		
+
 	}
 	
-	for(int )
-
+	int quInd;
+	int hh,mm;
+	for(int i=0;i<Q;i++){
+		quInd = queryList[i];
+		if(cus[quInd].startTime==-1) cout<<"Sorry";
+		else{
+			hh = cus[quInd].finishTime/60;
+			mm = cus[quInd].finishTime%60;
+			printf("%02d:%02d",hh,mm);
+		}
+		cout<<endl;
+	}
+	
+	
 	return 0;
-} 
+}

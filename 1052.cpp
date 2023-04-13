@@ -58,6 +58,6 @@ int main(){
 	for(j=0;j<N-1;j++){
 		cout<<address[indexs[j]]<<" "<<values[indexs[j]]<<" "<<address[indexs[j+1]]<<"\n";
 	}
-	if(j==N-1) cout<<address[indexs[j]]<<" "<<values[indexs[j]]<<" -1";
+	if(j==N-1) cout<<address[indexs[j]]<<" "<<values[indexs[j]]<<" -1\n";
 	return 0;
 }
