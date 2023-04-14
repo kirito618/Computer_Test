@@ -24,7 +24,8 @@
 
 ##### 并查集图解
 
-![img](F:\PAT\8DCC5D54394C2EEE68769FC1D13D9D48.png)
+![image](https://user-images.githubusercontent.com/80687988/232034723-540ec7c4-8bf5-4753-8bab-3502edd3b817.png)
+
 
 
 
