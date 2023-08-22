@@ -1,4 +1,8 @@
 *.o
 *.exe
+<<<<<<< HEAD
 README.md
 
+=======
+README.md
+>>>>>>> 4f1032b (更新一波)
