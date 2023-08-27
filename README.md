@@ -18,13 +18,206 @@
 
 > 即对于a和b，选其中**较大**的数做**被除数x**，**较小**的做**除数y**，二者除法的**余数**为c。
 >
-> - **c = x%y**；
-> - 若c!=0，则x=y; y=c。转第一步。
-> - 若c==0，则y就是最大公约数。
+> - $c  = x\%y$；
+> - 若$c!=0$，则$x=y; y=c$，转第一步。
+> - 若$c==0$，则y就是最大公约数。
 
 当我们求得两个数的最大公约数后，即可利用最大公约数求出最小公倍数。
 
 > **基本理念**： **a * b  =  最小公倍数*最大公约数**
+
+
+
+#### 高精度
+
+**高精度**是用来处理**大整数的运算**的。有的时候，题目给出要求运算的数或结果往往是**超出各种数据类型的范围**的。这种情况下无法直接使用任何一种数据类型来存储，就需要用到**高精度**的思想。
+
+所谓高精度，就是要**用数组来存放**一个大整数的每一位数。而所有的运算都是针对数组进行，最后的运算结果也是保存在数组中。
+
+我的习惯是用字符串来接收输入的大整数，再用一个数组来存放计算的结果。其中，存放结果的数组中，低位对应低下标，高位对应高下标，输出时应从数组存放有效数据的最后一个位置开始向前输出。
+
+##### 加法
+
+大致的思路就是，先看看谁比较长，既然是要模拟手算列式的过程，那么一般我们习惯把长的放在上面。
+
+而加法就是简单的**按位相加**即可，每次计算一位的加法结果(记得加上上一位对当前位的进位)，除以10得到对下一位的进位，取余10后得到当前位的真实值。
+
+**[Acwing791.高精度加法](https://www.acwing.com/problem/content/description/793/)**
+
+```c
+#include<stdio.h>
+#include<string.h>
+char A1[100010],B1[100010],res[100010];
+// 此加法保证A的长度大于等于B;
+void add(char A[],char B[]){
+    int lenA = strlen(A);
+    int lenB = strlen(B);
+    int i=lenA-1,j=lenB-1,jin=0,cur,cnt=0;
+    // 模拟列式加法
+    while(i>=0&&j>=0){
+        cur = (A[i]-'0')+(B[j]-'0')+jin;
+        jin = cur/10;
+        cur %= 10;
+        res[cnt++] = cur+'0';
+        i--,j--;
+    }
+    // 将超出的部分也计入数组
+    while(i>=0){
+        cur = A[i]-'0'+jin;
+        jin = cur/10;
+        cur = cur%10;
+        res[cnt++] = '0'+ cur;
+        i--;
+    } 
+	// 处理最后的进位
+    if(jin!=0) res[cnt++]='0'+jin;
+    for(i=cnt-1;i>=0;i--) printf("%c",res[i]);
+    puts("");
+}
+
+int main(){
+    int lenA,lenB;
+    scanf("%s\n%s",A1,B1);
+    lenA = strlen(A1),lenB = strlen(B1);
+    if(lenA>=lenB) add(A1,B1);
+    else add(B1,A1);
+    return 0;
+}
+```
+
+##### 减法
+
+减法的思路其实也差不太多，也是按位进行减法操作，每一位在计算时要**减去**上一位对当前位的**借位**。
+
+我们也是习惯将大数放在上面，小数放在下面。在进行减法之前，判断A和B谁比较大，大的放在上面，小的放在下面。若$A-B<0$，则做个记录，在最后输出正数结果之前先输出一个“-”。
+
+当某一位的两个数相减得到一个负数，则将当前结果cur进行处理。处理方式为：$cur = (cur+10)\%10$ 。这样一来，无论相减后是小于0还是大于0，都能够得到正确的当前位。
+
+**[Acwing792.高精度减法](https://www.acwing.com/problem/content/794/)**
+
+```c
+#include<stdio.h>
+#include<string.h>
+char A[100010],B[100010],res[100010];
+int cnt;
+
+// 返回是否a大于b 
+int comp(char a[],char b[]){
+	int len1 = strlen(a);
+	int len2 = strlen(b);
+	int i;
+	if(len1!=len2) return len1>len2;
+	else{
+		for(i=0;i<len1;i++){
+			if(a[i]>b[i]) return 1;
+			else if(a[i]<b[i]) return 0;
+		}
+	}
+	return 1;
+} 
+// 保证a>=b
+void sub(char a[],char b[]){
+	//printf("%s\n%s\n",a,b);
+	int len1 = strlen(a),len2 = strlen(b);
+	int i=len1-1,j=len2-1,cur,jie=0;
+	while(i>=0&&j>=0){
+		cur = a[i]-b[j]-jie;
+		if(cur<0){
+			jie = 1;
+			cur = (cur+10)%10;
+		}else{
+			jie = 0;
+		}
+		res[cnt++] = '0'+cur;
+		i--,j--;
+	}
+	while(i>=0){
+		cur = a[i]-'0'-jie;
+		if(cur<0){
+			jie = 1;
+			cur = (cur+10)%10;
+		}else{
+			jie = 0;
+		}
+		res[cnt++] = '0'+cur;
+		i--;
+	}
+	while(res[cnt-1]=='0'&&cnt>1) cnt--;
+	res[cnt] = '\0';
+}
+
+int main(){
+	int fu=0,i;
+    scanf("%s\n%s",A,B);
+    // 取较大的数作为被减数 
+    if(comp(A,B)==1) sub(A,B);
+    else{
+    	fu = 1; 
+    	sub(B,A);
+	}
+	if(fu==1) putchar('-');
+	i = strlen(res)-1;
+	for(;i>=0;i--) printf("%c",res[i]);
+	putchar('\n');
+    return 0;
+}
+```
+
+
+
+##### 乘法
+
+同样是**模拟手算列式**，不过乘法列式有一个**特点**需要掌握。
+
+假设我们每个数的个位下标为0，十位为1，以此类推。假设第一个数的位数下标为i，第二个数的位数下标为j，则二者相乘的结果应**累加**在下标为$i+j$的单元内。
+
+第一个双层循环确定好每一位的计算结果，这些结果**不需要加进位，不需要取余**。
+
+计算完成后，再从低位向高位遍历结果数组，这次要**加进位并取余**，同时**更新进位**。
+
+[**Acwing793.高精度乘法**](https://www.acwing.com/problem/content/795/)
+
+```c
+#include<stdio.h>
+#include<string.h>
+
+char A[100010],B[10010];
+int res[1000010],cnt;
+
+void multiply(char a[],char b[]){
+	int lenA = strlen(a),lenB = strlen(b);
+	int i,j,x,y,k,cur,jin,cnt=0;
+	for(i=lenA-1;i>=0;i--){
+		for(j=lenB-1;j>=0;j--){
+			cur = (a[i]-'0')*(b[j]-'0');
+			x = lenA-1-i;
+			y = lenB-1-j;
+			res[x+y] += cur;
+			cnt = cnt>(x+y)?cnt:(x+y);
+		}
+	}
+	jin = 0;
+	for(i=0;i<=cnt;i++){
+		cur = res[i]+jin;
+		jin = cur/10;
+		res[i] = cur%10;
+	}
+	if(jin!=0) res[++cnt] = jin;
+	while(cnt>=1&&res[cnt]==0) cnt--;
+	for(i=cnt;i>=0;i--) printf("%d",res[i]);
+	puts("");
+}
+
+int main(){
+	int lenA,lenB;
+	scanf("%s\n%s",A,B);
+	lenA = strlen(A),lenB = strlen(B);
+	if(lenA>=lenB) multiply(A,B);
+	else multiply(B,A);
+	
+	return 0;
+}
+```
 
 
 
@@ -41,8 +234,8 @@
 > 3. 从**右侧**开始，在**保证左右指针合法**的情况下，找到**第一个** 右指针指向的值**小于基准值**的位置，用这个值**覆盖**掉 左指针所指位置的元素。
 > 4. 再从**左侧**开始，同上限制，找到第一个 左指针指向的值大于基准值的位置，用这个值覆盖掉 右指针所指位置的元素。
 > 5. 当循环结束，此时左右指针是**相等**的，并且指向的位置就是基准值应该放置的位置。
-> 6. 判断该位置左边元素个数是否大于1，若大于则进入**左区间**[l ,  ll-1]进行**递归**。
-> 7. 判断该位置左边元素个数是否大于1，若大于则进入**右区间**[ll+1 , r]进行**递归**。
+> 6. 判断该位置左边元素个数是否大于1，若大于则进入**左区间**$[l ,  ll-1]$进行**递归**。
+> 7. 判断该位置左边元素个数是否大于1，若大于则进入**右区间**$[ll+1 , r]$进行**递归**。
 
 
 
@@ -756,6 +949,175 @@ $$
 
 
 
+#### 堆
+
+##### 基本理解
+
+**堆**是一种特别的数据结构，它在形状上满足**完全二叉树**的定义。即它的存储是可以按照完全二叉树那样，存在一个数组里的。
+
+> **完全二叉树存储**
+>
+> 节点i(下标为i) 的左儿子下标是**2i**，右儿子下标是**2i+1**；
+>
+> 同理，节点i的父节点则是**i/2**(向下取整)；
+
+
+
+##### 堆的种类
+
+> - **大根堆**：每个节点都要**大于等于**它的左右子树的所有值。
+> - **小根堆**：每个节点都要**小于等于**它的左右子树的所有值。
+
+那么很明显，如果我们将一个序列构建成大根堆(小根堆)，那么这个堆的顶点就一定是序列的最大值(最小值)。
+
+
+
+##### 堆的操作
+
+**y总笔记**
+
+![image](https://github.com/kirito618/Computer_Test/assets/80687988/25a6d112-5e96-423a-9fa1-c079a4eaa1be)
+
+注：其实**down**操作和**up**操作都只会进行其中一个，因为**二者条件互斥**。
+
+
+
+##### 堆排序
+
+利用堆的特点，如果能**动态维护**一个堆结构，那么每次取出**堆顶元素**加入序列，最终得到的序列就一定是有序的。
+
+
+
+##### 堆排序实现
+
+###### 下沉(down)操作
+
+所谓**down**操作，就是指当堆的结构**不满足定义**时，如大顶堆的根节点比它左右儿子小，此时这个节点应该**下沉到一个正确的位置**从而保证堆结构成立。
+
+**down操作用来调整堆结构，使其满足堆结构定义**
+
+> **思路**
+>
+> 拿小顶堆来说，当当前节点无法满足堆定义时，需要进行**down**操作。
+>
+> 1. 取出当前点与其左右儿子节点中值**最小**的点。
+> 2. 如果说这个最小值点不是当前的根节点，说明根节点位置有问题，则将根节点与这个最小值点互换位置。
+> 3. 接下来对当前根节点进行**递归**处理。(因为交换以后可能被交换的点的位置也不合理)
+
+**代码**
+
+```c
+void down(int u){
+	int k = u;
+	// 若有左儿子,且左儿子不合理
+	if(2*u<=n&&heap[2*u]<heap[k]) k = 2*u;
+	// 若有右儿子,且右儿子不合理
+	if(2*u+1<=n&&heap[2*u+1]<heap[k]) k = 2*u+1;
+	if(k!=u){
+		reap[0] = reap[k];
+		reap[k] = reap[u];
+		reap[u] = reap[0];
+		down(k);
+	}
+}
+```
+
+
+
+###### 上浮up操作	
+
+即将一个节点向上浮动，当当前节点不满足定义时，如小顶堆中当前节点比父节点还小，那当前节点的位置应该和父节点进行调换，也就是所谓的**“上浮”**。
+
+**up操作一般用于向堆中插入元素**
+
+```c
+void up(int x){
+	while(x/2>=1&&heap[x]<heap[x/2]){
+		// 交换父子节点
+		heap[0] = heap[x];
+		heap[x] = heap[x/2];
+		heap[x/2] = heap[0];
+		x /= 2;
+	}
+}
+```
+
+
+
+###### 删除操作
+
+**删除最小值点**
+
+```c
+heap[1] = heap[N--];
+down(1);
+```
+
+
+
+###### 例题
+
+[**Acwing 838.堆排序**](https://www.acwing.com/problem/content/description/840/)
+
+注：堆排序只需要down操作即可完成。
+
+**代码**
+
+```c
+#include<stdio.h>
+int n,m;
+int heap[100010];
+int cnt;
+// 下降函数
+void down(int cur){
+    // 先把当前点记录为最小值点
+    int t = cur;
+    // 有左孩子且左孩子比最小值点小
+    if(cur*2<=cnt&&heap[cur*2]<heap[t]){
+        t = 2*cur;
+    }
+    // 有右孩子且右孩子比最小值点小
+    if((cur*2+1)<=cnt&&heap[cur*2+1]<heap[t]){
+        t = 2*cur+1;
+    }
+    // 最小的那个点不是根节点，说明根节点有问题，需要换位置
+    if(t!=cur){
+        heap[0] = heap[t];
+        heap[t] = heap[cur];
+        heap[cur] = heap[0];
+        // 递归使该节点下沉
+        down(t);
+    }
+}
+
+int main(){
+    int i;
+    scanf("%d %d",&n,&m);
+    for(i=1;i<=n;i++) scanf("%d",&heap[i]);
+    cnt = n;
+    // 建立初始堆,从n/2开始是因为,n/2是这棵树最后一个非叶子节点
+    for(i=n/2;i>=1;i--) down(i);
+    while(m--){
+        // 头节点为当前区域最小值
+        printf("%d ",heap[1]);
+        // 删除头节点，做法就是把当前区域最后一个值拿过来直接覆盖掉根节点
+        heap[1] = heap[cnt--];
+        // 重新down操作，保证堆结构合理
+        down(1);
+    }
+    printf("\n");
+    return 0;
+}
+```
+
+
+
+**注意**
+
+今天在重刷代码时提交Wrong了，我发现我自己没有注意一个细节，在排序的过程中，我们的思路是每次输出堆顶元素，再将其删掉，从而得到递增序列。但我今天的做法是错误的，**记住，一定要真的把这个值删掉，也就是要把堆节点个数n真的减少**。我今天的错误就出现在我用一个临时变量存了堆的元素个数，结果一直在减少这个临时变量，没有修改n值，实际上就没有真的把元素删掉。
+
+
+
 #### 图
 
 ##### 图的存储
@@ -978,6 +1340,308 @@ int dijkstra(){
     }
     if(dis[n]==0x3f3f3f3f) return -1;
     return dis[n];
+}
+```
+
+
+
+###### Dijkstra堆优化版本
+
+可以看到，上面的朴素Dijkstra算法被应用在**点的个数不是很多**的**稠密图**中，能够解决最短路问题，时间复杂度为$O(n^2)$。
+
+但当输入**图的点个数较多**，且为**稀疏图**时，每轮循环要想找到当前未确定的最短路径的点就十分的耗时，非常容易超时而无法AC。
+
+学过**堆**后，我们知道如果能够**维护一个小顶堆**，那么寻找未确定的最短路径的点，就变得十分容易且省时了，这个堆优化版本也就是这么想出来的。
+
+**执行步骤**
+
+> 1. 如果是**稠密图**就**邻接矩阵**存图，**稀疏图**用**邻接表**存，先把图存下来
+>
+> 2. 维护一个**小根堆**结构，堆内存放的是一个数值对儿（点到起点的最短距离，点的编号），可使用C++的**priority_queue**来当作堆使用。关于优先队列的基本的操作**代码**大致如下：
+>
+>    ```c++
+>    #include<queue>
+>    // 使用c++自带的数值对结构来存放每个状态
+>    typedef pair<int,int> PII;
+>    // 第一个参数是存放数据类型,第二个表示用什么来存放,第三个表示排序规则
+>    // greater<PII> 将保证优先队列按照PII数值对儿的第一个参数，以递增的顺序排序
+>    priority_queue<PII,vector<PII>,greater<PII>> heap;
+>    // 如何向堆中插入值和弹出堆顶?
+>    heap.push({1,0});
+>    PII top = heap.top();
+>    heap.pop();
+>    // 如何取值？
+>    int idx = top.second,val = top.first;
+>    ```
+>
+> 3. 将**起点**的数值对儿加入堆中
+>
+> 4. 当堆**非空**时继续循环
+>
+> 5. **弹出堆顶**的数值对，其存放的**点编号**记为**k**，判断**k**是否已经确定过最短路径，若确定过，则**跳过**此轮循环；否则以**k**为媒介，遍历**k**相连的所有点**i**，若中转k再到i能够缩短i的最短距离，则更新i的最短距离，并构造新的数值对加入堆中。
+>
+> 6. 循环彻底结束后，$dist[n]$即为结果
+
+**题目**
+
+**[Acwing850.Dijkstra求最短路II](https://www.acwing.com/problem/content/852/)**
+
+```c++
+#include<iostream>
+#include<queue>
+#include<string.h>
+using namespace std;
+
+int n,m;
+int dist[1500010],st[1500010];
+int h[1500010],ne[1500010],node[1500010],e[1500010],cnt;
+// 存放节点到起点的最短距离和节点编号
+// 第一个值是距离,是因为queue自动排序按照第一个值大小来排
+typedef pair<int,int> PII;
+priority_queue<PII,vector<PII>,greater<PII>> heap;
+
+void add(int a,int b,int v){
+    node[cnt] = b;
+    e[cnt] = v;
+    ne[cnt] = h[a];
+    h[a] = cnt++;
+}
+
+void DijkstraII(){
+    int i,j,t,v;
+    memset(dist,0x3f,sizeof dist);
+    dist[1]=0;
+    // 将编号为1,最短距离为0的状态入栈
+    heap.push({0,1});
+    while(heap.size()){
+        PII tt = heap.top();
+        // 弹出堆顶
+        heap.pop();
+        // t为堆顶元素的编号,v为堆顶元素到起点的最短距离
+        t = tt.second;
+        v = tt.first;
+        // 如果堆顶的点已经确定了一条最短路径,则跳过
+        if(st[t]) continue;
+        // 标记为已确定
+        st[t]=1;
+        for(i=h[t];i!=-1;i=ne[i]){
+            j = node[i];
+            if(dist[j]>v+e[i]){
+                dist[j] = dist[t]+e[i];
+                // 加入堆中
+                heap.push({dist[j],j});
+            }
+        }
+    }
+}
+
+int main(){
+    int i,a,b,v;
+    scanf("%d%d",&n,&m);
+    memset(h,-1,sizeof h);
+    for(i=0;i<m;i++){
+        scanf("%d%d%d",&a,&b,&v);
+        add(a,b,v);
+    }
+    DijkstraII();
+    if(dist[n]==0x3f3f3f3f) puts("-1");
+    else printf("%d\n",dist[n]);
+    
+    return 0;
+}
+```
+
+当然，既然是用堆优化，为了锻炼对于堆代码的熟悉程度，并尽可能拜托堆STL的依赖。
+
+接下来我将用**纯C语言重写**上面的算法。
+
+**代码(纯C语言)**
+
+```C
+#include<stdio.h>
+#include<string.h>
+int n,m;
+int dist[1500010],st[1500010],cnt,ids;
+int h[1500010],ne[1500010],node[1500010],e[1500010];
+
+typedef struct PII{
+	int idx,dis;
+}PII;
+PII p[1500010];
+
+void add(int a,int b,int v){
+	node[ids] = b;
+	e[ids] = v;
+	ne[ids] = h[a];
+	h[a] = ids++;
+}
+
+void up(int x){
+	while(x/2>=1&&p[x].dis<p[x/2].dis){
+		p[0] = p[x];
+		p[x] = p[x/2];
+		p[x/2] = p[0];
+		x/=2;
+	}
+}
+
+void down(int x){
+	int t = x;
+	if(x*2<=cnt&&p[x*2].dis<p[t].dis) t = x*2;
+	if(x*2+1<=cnt&&p[x*2+1].dis<p[t].dis) t = x*2+1;
+	if(t!=x){
+		p[0] = p[t];
+		p[t] = p[x];
+		p[x] = p[0];
+		down(t);
+	}
+}
+
+PII pop(){
+	PII res = p[1];
+	p[1] = p[cnt--];
+	down(1);
+	return res;
+}
+
+void push(int idx,int dis){
+	PII t;
+	t.idx = idx,t.dis = dis;
+	p[++cnt] = t;
+	up(cnt);
+}
+
+void DijkstraII(){
+    int i,j,t,temp,idx,dis,cur;
+    memset(dist,0x3f,sizeof dist);
+    dist[1]=0;
+    push(1,0);
+    while(cnt>0){
+    	//printf("%d\n",cnt);
+        // 堆顶点为最小距离的未确定点
+        PII t=pop();
+        idx = t.idx,dis = t.dis;
+        if(st[idx]) continue ;
+        st[idx]=1;
+        for(j=h[idx];j!=-1;j=ne[j]){
+        	cur = node[j];
+            temp = dis+e[j];
+            if(temp<dist[cur]){
+            	dist[cur] = temp;
+            	push(cur,dist[cur]);
+			}
+        }
+    }
+}
+
+int main(){
+    int i,a,b,v;
+    scanf("%d%d",&n,&m);
+    memset(h,-1,sizeof h);
+    for(i=0;i<m;i++){
+        scanf("%d%d%d",&a,&b,&v);
+        add(a,b,v);
+    }
+    DijkstraII();
+    if(dist[n]==0x3f3f3f3f) puts("-1");
+    else printf("%d\n",dist[n]);
+    
+    return 0;
+}
+```
+
+
+
+###### Dijkstra算法拓展
+
+Dijkstra算法可以用于寻找单源最短路，但也有题目会设置多条同等长度的最短路径，要求我们输出代价最小、路费最少的路径，以及这个路径的花销。这时，我们的想法就要活跃一些，要学会在算法执行过程中记录路径以及一些必要的信息。
+
+**[Acwing1507.旅行路线](https://www.acwing.com/problem/content/1509/)**
+
+**题目描述**
+
+题目给出一张**无向图**，每条边有**距离**和**代价**两个属性。我们需要找到图中**指定源点和终点**的最短路径，并从起点开始输出路径上的所有点，最后再输出路径的累计距离和累计花销。
+
+**当存在多条最短路径时，输出代价最小的那一条。**
+
+
+
+**思路**
+
+> **如何记录路径？**
+>
+> 我们可以维护一个pre数组，**pre[i]**存储的是i号节点所在的最短路径的**上一个**点。
+>
+> **如何找出题目所要求的最短路径？**
+>
+> 大体上还是按照Dijkstra算法的步骤，每一轮找到一个未处理的，累计距离最短的点。然后用它去更新所有点的累计距离和累计花销。更新按照下面的分支进行：
+>
+> ```c
+> // 假设t是找出来的这一轮中未处理的累计距离最短的点
+> cc = cost[t] + c[t][j];
+> dd = dist[t] + d[t][j];
+> // 如果中转到t再到j后的距离更短,那说明最短路径应该先中转到t,所以更新距离和花销数组
+> if(dd<dist[j]){
+>     dist[j] = dd,cost[j] = cc,pre[j]=t;
+> }else if(dd==dist[j]&&cc<cost[j]){
+>     cost[j] = cc,pre[j] = t;
+> }
+> ```
+
+**代码**
+
+```c
+#include<stdio.h>
+#include<string.h>
+int N,M,S,D; 
+int d[510][510],c[510][510];
+int dist[510],cost[510],st[510],last[510];
+int stack[510],cnt;
+
+void method(int begin,int end){
+	int i,j,k,t,temp,dd,cc;
+	memset(dist,0x3f,sizeof dist);
+	memset(cost,0x3f,sizeof cost);
+	dist[begin] = 0,cost[begin]=0,last[begin]=-1;
+	for(i=0;i<N;i++){
+		t = -1;
+		for(j=0;j<N;j++){
+			if(st[j]!=1&&(t==-1||dist[j]<dist[t])) t = j;
+		}
+		st[t]=1;
+		for(j=0;j<N;j++){
+			dd = dist[t]+d[t][j];
+			cc = cost[t]+c[t][j];
+			if(dd<dist[j]){
+				dist[j] = dd;
+				cost[j] = cc;
+				last[j] = t;
+			}else if(dd==dist[j]&&cc<cost[j]){
+				cost[j] = cc;
+				last[j] = t;
+			}
+		}
+	}
+	printf("%d",S);
+	for(i=D;i!=begin;i=last[i]) stack[++cnt] = i;
+	while(cnt>0) printf(" %d",stack[cnt--]);
+	printf(" %d %d",dist[D],cost[D]);
+}
+
+int main(){
+	int i,a,b,di,co;
+	memset(d,0x3f,sizeof d);
+	memset(c,0x3f,sizeof c);
+	scanf("%d%d%d%d",&N,&M,&S,&D);
+	for(i=0;i<M;i++){
+		scanf("%d%d%d%d",&a,&b,&di,&co);
+		d[a][b] = di;
+		d[b][a] = di;
+		c[a][b] = co;
+		c[b][a] = co;
+	}
+	method(S,D);
+	return 0;
 }
 ```
 
@@ -1215,176 +1879,6 @@ int main(){
 
 
 
-#### 堆
-
-##### 基本理解
-
-**堆**是一种特别的数据结构，它在形状上满足**完全二叉树**的定义。即它的存储是可以按照完全二叉树那样，存在一个数组里的。
-
-> **完全二叉树存储**
->
-> 节点i(下标为i) 的左儿子下标是**2i**，右儿子下标是**2i+1**；
->
-> 同理，节点i的父节点则是**i/2**(向下取整)；
-
-
-
-##### 堆的种类
-
-> - **大根堆**：每个节点都要**大于等于**它的左右子树的所有值。
-> - **小根堆**：每个节点都要**小于等于**它的左右子树的所有值。
-
-那么很明显，如果我们将一个序列构建成大根堆(小根堆)，那么这个堆的顶点就一定是序列的最大值(最小值)。
-
-
-
-##### 堆的操作
-
-**y总笔记**
-
-![image](https://github.com/kirito618/Computer_Test/assets/80687988/25a6d112-5e96-423a-9fa1-c079a4eaa1be)
-
-注：其实**down**操作和**up**操作都只会进行其中一个，因为**二者条件互斥**。
-
-
-
-##### 堆排序
-
-利用堆的特点，如果能**动态维护**一个堆结构，那么每次取出**堆顶元素**加入序列，最终得到的序列就一定是有序的。
-
-
-
-##### 堆排序实现
-
-###### 下沉(down)操作
-
-所谓**down**操作，就是指当堆的结构**不满足定义**时，如大顶堆的根节点比它左右儿子小，此时这个节点应该**下沉到一个正确的位置**从而保证堆结构成立。
-
-**down操作用来调整堆结构，使其满足堆结构定义**
-
-> **思路**
->
-> 拿小顶堆来说，当当前节点无法满足堆定义时，需要进行**down**操作。
->
-> 1. 取出当前点与其左右儿子节点中值**最小**的点。
-> 2. 如果说这个最小值点不是当前的根节点，说明根节点位置有问题，则将根节点与这个最小值点互换位置。
-> 3. 接下来对当前根节点进行**递归**处理。(因为交换以后可能被交换的点的位置也不合理)
-
-**代码**
-
-```c
-void down(int u){
-	int k = u;
-	// 若有左儿子,且左儿子不合理
-	if(2*u<=n&&heap[2*u]<heap[k]) k = 2*u;
-	// 若有右儿子,且右儿子不合理
-	if(2*u+1<=n&&heap[2*u+1]<heap[k]) k = 2*u+1;
-	if(k!=u){
-		reap[0] = reap[k];
-		reap[k] = reap[u];
-		reap[u] = reap[0];
-		down(k);
-	}
-}
-```
-
-
-
-###### 上浮up操作	
-
-即将一个节点向上浮动，当当前节点不满足定义时，如小顶堆中当前节点比父节点还小，那当前节点的位置应该和父节点进行调换，也就是所谓的**“上浮”**。
-
-**up操作一般用于向堆中插入元素**
-
-```c
-void up(int x){
-	while(x/2>=1&&heap[x]<heap[x/2]){
-		// 交换父子节点
-		heap[0] = heap[x];
-		heap[x] = heap[x/2];
-		heap[x/2] = heap[0];
-		x /= 2;
-	}
-}
-```
-
-
-
-###### 删除操作
-
-**删除最小值点**
-
-```c
-heap[1] = heap[N--];
-down(1);
-```
-
-
-
-###### 例题
-
-[**Acwing 838.堆排序**](https://www.acwing.com/problem/content/description/840/)
-
-注：堆排序只需要down操作即可完成。
-
-**代码**
-
-```c
-#include<stdio.h>
-int n,m;
-int heap[100010];
-int cnt;
-// 下降函数
-void down(int cur){
-    // 先把当前点记录为最小值点
-    int t = cur;
-    // 有左孩子且左孩子比最小值点小
-    if(cur*2<=cnt&&heap[cur*2]<heap[t]){
-        t = 2*cur;
-    }
-    // 有右孩子且右孩子比最小值点小
-    if((cur*2+1)<=cnt&&heap[cur*2+1]<heap[t]){
-        t = 2*cur+1;
-    }
-    // 最小的那个点不是根节点，说明根节点有问题，需要换位置
-    if(t!=cur){
-        heap[0] = heap[t];
-        heap[t] = heap[cur];
-        heap[cur] = heap[0];
-        // 递归使该节点下沉
-        down(t);
-    }
-}
-
-int main(){
-    int i;
-    scanf("%d %d",&n,&m);
-    for(i=1;i<=n;i++) scanf("%d",&heap[i]);
-    cnt = n;
-    // 建立初始堆,从n/2开始是因为,n/2是这棵树最后一个非叶子节点
-    for(i=n/2;i>=1;i--) down(i);
-    while(m--){
-        // 头节点为当前区域最小值
-        printf("%d ",heap[1]);
-        // 删除头节点，做法就是把当前区域最后一个值拿过来直接覆盖掉根节点
-        heap[1] = heap[cnt--];
-        // 重新down操作，保证堆结构合理
-        down(1);
-    }
-    printf("\n");
-    return 0;
-}
-
-```
-
-
-
-**注意**
-
-今天在重刷代码时提交Wrong了，我发现我自己没有注意一个细节，在排序的过程中，我们的思路是每次输出堆顶元素，再将其删掉，从而得到递增序列。但我今天的做法是错误的，**记住，一定要真的把这个值删掉，也就是要把堆节点个数n真的减少**。我今天的错误就出现在我用一个临时变量存了堆的元素个数，结果一直在减少这个临时变量，没有修改n值，实际上就没有真的把元素删掉。
-
-
-
 
 
 #### 散列(哈希)表
@@ -1603,7 +2097,7 @@ int main(){
 
 #### 贪心思想
 
-所谓贪心，是指一种**短见**的思考方式，即对于每一个状态，我都选择**当前状态下最好的路**往下走，而不考虑全局。
+所谓贪心，是指一种**“短见”**的思考方式，即对于每一个状态，我都选择**当前状态下最好的路**往下走，而不考虑全局。
 
 这是一种灵活的思想，不存在硬性的模板，因此尽量依靠题目来积累。
 
