@@ -949,6 +949,167 @@ $$
 
 
 
+##### 平衡二叉搜索树(AVL树)
+
+平衡二叉搜索树，首先它是二叉搜索树，即要求左小右大(或左大右小)；在此基础上，要求左右子树的高度差不超过1(平衡)，这样的树结构被称为**平衡二叉搜索树**。
+
+###### 动态调整过程
+
+在维护AVL树的过程中，共可能出现以下**四种情况**，不同的情况有不同的处理措施。
+
+![无标题](README.assets/无标题.png)
+
+###### 平衡二叉树插入操作
+
+```c
+// 向平衡二叉树中插入一个点,假设该平衡二叉树为左小右大
+void insert(int cur,int w){
+	if(cur==-1){
+		val[cnt++] = w;
+	}else if(w<=val[cur]){
+		insert(l[cur],w);
+	}else{
+		insert(r[cur],w);
+	}
+}
+```
+
+
+
+###### 左旋操作
+
+当新插入的值导致这棵树呈现上图的**情况2**时，需要进行**左旋**操作。
+
+```c++
+// 左旋操作 
+void L(int& u){
+	int p = r[u];
+	r[u] = l[p];
+	l[p] = u;
+	// 换完后,二者高度需要更新 
+	update(u),update(p);
+	u = p;
+}
+```
+
+这里使用引用的原因是为了动态维护根节点，使得最后能够找到整棵树的根节点。
+
+
+
+###### 右旋操作
+
+当新插入的值导致这棵树呈现上图的**情况1**时，需要进行**右旋**操作。代码与左旋一一对应。
+
+```C++
+// 右旋操作 
+void R(int& u){
+	int p = l[u];
+	l[u] = r[p];
+	r[p] = u;
+	// 换完后,二者高度需要更新 
+	update(u),update(p);
+	u = p;
+}
+```
+
+除了以上几个操作外，我们还应维护每个节点的**高度**，y总是用h数组来同时记录节点高度，并在操作后进行更新。节点高度可由下述公式进行更新。
+$$
+height(u) = max(height(l\_son,r\_son)) + 1
+$$
+
+
+###### 例题
+
+**[Acwing1552.AVL树的根](https://www.acwing.com/problem/content/1554/)**
+
+给出一个插入序列，我们需要将节点按序插入AVL树，最后输出这棵AVL树的根节点。
+
+```c++
+#include<stdio.h>
+#include<string.h>
+int val[30],l[30],r[30],h[30],cnt;
+int n;
+
+// 返回当前根节点的左右子树的高度差 
+int get_balance(int u){
+	return h[l[u]]-h[r[u]];
+}
+
+// 更新u节点的高度(根节点高度=左右子树最大高度+1) 
+void update(int u){
+	h[u] = h[l[u]]>h[r[u]]?h[l[u]]:h[r[u]];
+	h[u]++; 
+}
+
+// 右旋操作 
+void R(int& u){
+	int p = l[u];
+	l[u] = r[p];
+	r[p] = u;
+	// 换完后,二者高度需要更新 
+	update(u),update(p);
+	u = p;
+}
+
+// 左旋操作 
+void L(int& u){
+	int p = r[u];
+	r[u] = l[p];
+	l[p] = u;
+	// 换完后,二者高度需要更新 
+	update(u),update(p);
+	u = p;
+}
+
+// 向平衡二叉树中插入一个点 
+void insert(int& cur,int w){
+	if(!cur){
+		cur = ++cnt;
+		val[cur] = w;
+	}else if(w<val[cur]){
+		// 应该插入左侧 
+		insert(l[cur],w);
+		if(get_balance(cur)==2){
+			if(get_balance(l[cur])==1){
+				// 情况1,左侧链条形式,右旋根节点 
+				R(cur); 
+			}else{
+				// 情况3
+				L(l[cur]);
+				R(cur);
+			}
+		}
+	}else{
+		insert(r[cur],w);
+		if(get_balance(cur)==-2){
+			if(get_balance(r[cur])==-1){
+				// 情况2,右侧链条形式,右旋根节点 
+				L(cur); 
+			}else{
+				// 情况4
+				R(r[cur]);
+				L(cur);
+			}
+		}
+	}
+	// 更新当前节点的高度 
+	update(cur);
+}
+
+int main(){
+	int i,root=0,w;
+	scanf("%d",&n);
+	while(n--){
+		scanf("%d",&w);
+		insert(root,w);
+	}
+	printf("%d\n",val[root]);
+	return 0;
+} 
+```
+
+
+
 #### 堆
 
 ##### 基本理解
